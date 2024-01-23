@@ -46,11 +46,10 @@ public class ReadingsController : ControllerBase
                 detail: "Device secret is not within the valid range.",
                 statusCode: StatusCodes.Status401Unauthorized);
         }
-        string pattern = "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-\r\n]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9azA-Z-]+)*))?$\r\n";
- 
+        string pattern = "^(?<major>0|[1-9]\\d*)\\.(?<minor>0|[1-9]\\d*)\\.(?<patch>0|[1-9]\\d*)(?:-(?<prerelease>(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+(?<buildmetadata>[0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$";
 
-        Match match = Regex.Match(deviceReadingRequest.FirmwareVersion, pattern);
-        if (!match.Success)
+
+        if (Regex.IsMatch(deviceReadingRequest.FirmwareVersion, pattern))
         {
             List<Alert> alerts = new List<Alert>();
 
@@ -68,11 +67,16 @@ public class ReadingsController : ControllerBase
         }
         else
         {
-            Dictionary<string, string> errors = new Dictionary<string, string>();
-            errors["FirmwareVersion"] = "The firmware value does not match semantic versioning format.";
+            Dictionary<string, string[]> errors = new Dictionary<string, string[]>();
+            string[] errorsfirmware = new string[1];
+            errorsfirmware[0] = "The firmware value does not match semantic versioning format.";
+            errors["FirmwareVersion"] = errorsfirmware;
+            var problemDetails = new { 
+                Errors = errors
+            };
 
 
-            return BadRequest(errors);
+            return BadRequest(problemDetails);
         }
        
 
