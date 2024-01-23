@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using ClimateMonitor.Services;
 using ClimateMonitor.Services.Models;
+using System.Text.RegularExpressions;
+using Microsoft.AspNetCore.Connections.Features;
 
 namespace ClimateMonitor.Api.Controllers;
 
@@ -34,16 +36,37 @@ public class ReadingsController : ControllerBase
     /// <param name="deviceReadingRequest">Sensor information and extra metadata from device.</param>
     [HttpPost("evaluate")]
     public ActionResult<IEnumerable<Alert>> EvaluateReading(
-        string deviceSecret,
         [FromBody] DeviceReadingRequest deviceReadingRequest)
     {
+        string deviceSecret = Request.Headers["x-device-shared-secret"];
+
         if (!_secretValidator.ValidateDeviceSecret(deviceSecret))
         {
             return Problem(
                 detail: "Device secret is not within the valid range.",
                 statusCode: StatusCodes.Status401Unauthorized);
         }
+        string pattern = "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-\r\n]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9azA-Z-]+)*))?$\r\n";
+ 
 
-        return Ok(_alertService.GetAlerts(deviceReadingRequest));
+        Match match = Regex.Match(deviceReadingRequest.FirmwareVersion, pattern);
+        if (!match.Success)
+        {
+
+            //if (deviceReadingRequest.Humidity<)
+
+            return Ok(_alertService.GetAlerts(deviceReadingRequest));
+        }
+        else
+        {
+            Dictionary<string, string> errors = new Dictionary<string, string>();
+            errors["FirmwareVersion"] = "The firmware value does not match semantic versioning format.";
+
+
+            return BadRequest(errors);
+        }
+       
+
+   
     }
 }
