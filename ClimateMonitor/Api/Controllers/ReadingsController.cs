@@ -52,10 +52,19 @@ public class ReadingsController : ControllerBase
         Match match = Regex.Match(deviceReadingRequest.FirmwareVersion, pattern);
         if (!match.Success)
         {
+            List<Alert> alerts = new List<Alert>();
 
-            //if (deviceReadingRequest.Humidity<)
+            if (deviceReadingRequest.Humidity > 50 || deviceReadingRequest.Humidity < 0)
+            {
+                alerts.Add(new Alert(AlertType.HumiditySensorOutOfRange, "Invalid range of humidity"));
 
-            return Ok(_alertService.GetAlerts(deviceReadingRequest));
+            }
+            if (deviceReadingRequest.Temperature > 50 || deviceReadingRequest.Temperature < 0)
+            {
+                alerts.Add(new Alert(AlertType.TemperatureSensorOutOfRange, "Invalid range of temperature"));
+            }
+
+            return Ok(alerts);
         }
         else
         {
